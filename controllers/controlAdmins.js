@@ -4,36 +4,43 @@ import { sendEmail } from "../utils/sendEmail.js";
 import crypto from "crypto";
 
 export const getAdmin = async (req, res) => {
-    try {
-        const user = req.user;
+  try {
+    const user = req.user;
+    const id = user.admin_id;
+    console.log("Admin ID:", id);
 
-        const id = user.admin_id
-        console.log(id)
-        const admins = await db.query(
-            `SELECT *FROM admins
-            WHERE admin_id = ?
-            `, [id]
-        )
-       
-        res.status(200).json(admins[0]);
-    } catch (error) {
-        return res.status(500).json({ error: error?.message })
+    const result = await db.query(
+      "SELECT * FROM admins WHERE admin_id = $1",
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "Admin not found!" });
     }
-}
-export const  getAllAdmins =async  (req, res) => {
-    try {
-        const user = req.user;
-        console.log(user)
-        const admins = await  db.query(
-            `SELECT *FROM admins
-            `
-        )
-         console.log(admins)
-        res.status(200).json(admins[0]);
-    } catch (error) {
-        return res.status(500).json({ error: error?.message })
-    }
-}
+
+    res.status(200).json(result.rows[0]); // return the single admin object
+  } catch (error) {
+    return res.status(500).json({ error: error?.message });
+  }
+};
+
+
+
+export const getAllAdmins = async (req, res) => {
+  try {
+    const user = req.user;
+    console.log("Requesting user:", user);
+
+    const result = await db.query("SELECT * FROM admins");
+
+    console.log("Admins result:", result.rows);
+
+    res.status(200).json(result.rows); // return all rows
+  } catch (error) {
+    return res.status(500).json({ error: error?.message });
+  }
+};
+
 
 export const addNewAdmin = async (req, res) => {
 
@@ -43,38 +50,42 @@ export const addNewAdmin = async (req, res) => {
         const verifyToken = crypto.randomBytes(32).toString("hex");
 
         if (!name || !email || !password || !phoneNumber || !secretReg) {
-            return res.status(400).json({ message: "All field required" });
+        return res.status(400).json({ message: "All fields required" });
         }
 
         if (secretReg !== process.env.SECRET_REG) {
-            return res.status(400).json({ message: "Failed to verify the registration code" });
+        return res.status(400).json({ message: "Failed to verify the registration code" });
         }
-        //only two admins in the system
-        const adminCount = await db.query(
-            `
-            SELECT COUNT(*) as count FROM admins
-            `
-        )
-        if (adminCount[0][0].count >= 1) {
-            return res.status(400).json({ message: "Maximum number of admins reached" });
+
+        // only two admins in the system
+        const adminCountResult = await db.query("SELECT COUNT(*) AS count FROM admins");
+        const adminCount = parseInt(adminCountResult.rows[0].count, 10);
+
+        if (adminCount >= 2) {
+        return res.status(400).json({ message: "Maximum number of admins reached" });
         }
+
         const hashedPassword = await bcrypt.hash(password, 10);
-        const [rows] = await db.query("SELECT admin_id FROM admins ORDER BY created_at DESC LIMIT 1");
+
+        // get last admin_id
+        const lastAdminResult = await db.query(
+        "SELECT admin_id FROM admins ORDER BY created_at DESC LIMIT 1"
+        );
 
         let admin_id;
-        if (rows.length === 0) {
-            admin_id = "AD001";
+        if (lastAdminResult.rows.length === 0) {
+        admin_id = "AD001";
         } else {
-            const lastId = rows[0].admin_id; // e.g. "AD007"
-            const num = parseInt(lastId.replace("AD", ""), 10) + 1;
-            admin_id = `AD${String(num).padStart(3, "0")}`;
+        const lastId = lastAdminResult.rows[0].admin_id; // e.g. "AD007"
+        const num = parseInt(lastId.replace("AD", ""), 10) + 1;
+        admin_id = `AD${String(num).padStart(3, "0")}`;
         }
 
 
         await db.query(
             `
             INSERT INTO admins (admin_id, name, email, password, phoneNumber, verify_token)
-            VALUES (?, ?, ?, ?, ?, ?)
+            VALUES ($1, $2, $3, $4, $5, $6)
             `,
             [admin_id, name, email, hashedPassword, phoneNumber, verifyToken]
         )
@@ -271,96 +282,98 @@ export const addNewAdmin = async (req, res) => {
 
 }
 
+
+
 export const updateAdmin = async (req, res) => {
-    const { id } = req.params;
-    const { name, email, phoneNumber, password, newPassword } = req.body;
+  const { id } = req.params;
+  const { name, email, phoneNumber, password, newPassword } = req.body;
 
-    if (!id) return res.status(404).json({ message: "Id required" });
+  if (!id) return res.status(404).json({ message: "Id required" });
 
-    try {
-        // Fetch admin by ID
-        const [rows] = await db.query(`SELECT * FROM admins WHERE admin_id = ?`, [id]);
-        if (rows.length === 0) {
-            return res.status(404).json({ message: "Admin not found" });
-        }
-
-        const admin = rows[0];
-        let hashedPassword = admin.password; // keep old password by default
-
-        // If password change requested
-        if (password && newPassword) {
-            
-            const isMatch = await bcrypt.compare(password, admin.password);
-            if (!isMatch) {
-                return res.status(400).json({ message: "Incorrect recent password" });
-            }
-            //check is new password is the same as recent
-            if (password === newPassword) {
-                return res.status(400).json({ message: "New password cannot be the same as recent password" });
-            }
-            hashedPassword = await bcrypt.hash(newPassword, 10);
-        }
-        
-        // Build dynamic update fields
-        const fields = [];
-        const values = [];
-
-        if (name) {
-            fields.push("name = ?");
-            values.push(name);
-        }
-        if (email) {
-            fields.push("email = ?");
-            values.push(email);
-        }
-        if (phoneNumber) {
-            fields.push("phoneNumber = ?");
-            values.push(phoneNumber);
-        }
-        if (newPassword) {
-            fields.push("password = ?");
-            values.push(hashedPassword);
-        }
-
-        if (fields.length === 0) {
-            return res.status(400).json({ message: "No fields provided to update" });
-        }
-
-        values.push(id); // for WHERE clause
-
-        const [results] = await db.query(
-            `UPDATE admins SET ${fields.join(", ")} WHERE admin_id = ?`,
-            values
-        );
-
-        res.status(200).json({ message: "Admin updated successfully" });
-    } catch (error) {
-        return res.status(500).json({ error: error?.message });
+  try {
+    // Fetch admin by ID
+    const result = await db.query("SELECT * FROM admins WHERE admin_id = $1", [id]);
+   
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "Admin not found" });
     }
-};
 
-export const deleteAdmin = async (req, res) => {
-    const { id } = req.params;
-    if (!id) return res.status(404).json({ message: "Id required" });
+    const admin = result.rows[0];
+    let hashedPassword = admin.password; // keep old password by default
 
-    const [row] = await db.query(`SELECT *FROM admins WHERE admin_id = ?`, [id]);
+    // If password change requested
+    if (password && newPassword) {
+      const isMatch = await bcrypt.compare(password, admin.password);
+      if (!isMatch) {
+        return res.status(400).json({ message: "Incorrect recent password" });
+      }
+      if (password === newPassword) {
+        return res.status(400).json({ message: "New password cannot be the same as recent password" });
+      }
+      hashedPassword = await bcrypt.hash(newPassword, 10);
+    }
 
-    if (row.length === 0) return res.status(404).json({ message: "Admin not found!" });
+    // Build dynamic update fields
+    const fields = [];
+    const values = [];
+    let paramIndex = 1;
+
+    if (name) {
+      fields.push(`name = $${paramIndex++}`);
+      values.push(name);
+    }
+    if (email) {
+      fields.push(`email = $${paramIndex++}`);
+      values.push(email);
+    }
+    if (phoneNumber) {
+      fields.push(`phoneNumber = $${paramIndex++}`);
+      values.push(phoneNumber);
+    }
+    if (newPassword) {
+      fields.push(`password = $${paramIndex++}`);
+      values.push(hashedPassword);
+    }
+
+    if (fields.length === 0) {
+      return res.status(400).json({ message: "No fields provided to update" });
+    }
+
+    values.push(id); // for WHERE clause
 
     await db.query(
-        `
-        DELETE FROM admins
-        WHERE admin_id = ?
-        `, [id]
+      `UPDATE admins SET ${fields.join(", ")} WHERE admin_id = $${paramIndex}`,
+      values
     );
-    res.status(200).json({ message: "Admin deleted successfully" });
-    try {
 
-    } catch (error) {
-        return res.status(500).json({ error: error?.message });
+    res.status(200).json({ message: "Admin updated successfully" });
+  } catch (error) {
+    return res.status(500).json({ error: error?.message });
+  }
+};
+
+
+
+export const deleteAdmin = async (req, res) => {
+  const { id } = req.params;
+  if (!id) return res.status(404).json({ message: "Id required" });
+
+  try {
+    // Check if admin exists
+    const result = await db.query("SELECT * FROM admins WHERE admin_id = $1", [id]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "Admin not found!" });
     }
 
-}
+    // Delete admin
+    await db.query("DELETE FROM admins WHERE admin_id = $1", [id]);
+
+    res.status(200).json({ message: "Admin deleted successfully" });
+  } catch (error) {
+    return res.status(500).json({ error: error?.message });
+  }
+};
 // export const getAdmin = async (req, res) => {
 //     const { id } = req.params;
 //     if (!id) return res.status(404).json({ message: "Id required" });
@@ -385,64 +398,91 @@ export const deleteAdmin = async (req, res) => {
 // }
 
 export const getDashboardStats = async (req, res) => {
-    try {
-        const [revenue] = await db.query("SELECT SUM(total) as total_revenue FROM orders WHERE status = 'paid'");
-        const [orders] = await db.query("SELECT COUNT(*) as total_orders FROM orders");
-        const [admins] = await db.query("SELECT COUNT(*) as total_admins FROM admins");
-        const [products] = await db.query("SELECT COUNT(*) as total_products FROM products");
-        const [lowStock] = await db.query("SELECT COUNT(*) as low_stock FROM products WHERE stock <= 5");
+  try {
+    const revenueResult = await db.query(
+      "SELECT COALESCE(SUM(total), 0) AS total_revenue FROM orders WHERE status = 'paid'"
+    );
 
-        // Sales trend for last 7 days
-        const [salesTrend] = await db.query(`
-            SELECT DATE(created_at) as date, SUM(total) as revenue 
-            FROM orders 
-            WHERE status = 'paid' 
-            AND created_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
-            GROUP BY DATE(created_at)
-            ORDER BY DATE(created_at) ASC
-        `);
+    const ordersResult = await db.query(
+      "SELECT COUNT(*) AS total_orders FROM orders"
+    );
 
-        // Category distribution
-        const [categoryStats] = await db.query(`
-            SELECT c.name as name, COUNT(p.id) as value
-            FROM categories c
-            LEFT JOIN products p ON c.id = p.category_id
-            GROUP BY c.id, c.name
-        `);
+    const adminsResult = await db.query(
+      "SELECT COUNT(*) AS total_admins FROM admins"
+    );
 
-        res.status(200).json({
-            totalRevenue: revenue[0].total_revenue || 0,
-            totalOrders: orders[0].total_orders || 0,
-            totaladmins: admins[0].total_admins || 0,
-            totalProducts: products[0].total_products || 0,
-            lowStock: lowStock[0].low_stock || 0,
-            salesTrend: salesTrend,
-            categoryStats: categoryStats
-        });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-}
+    const productsResult = await db.query(
+      "SELECT COUNT(*) AS total_products FROM products"
+    );
+
+    const lowStockResult = await db.query(
+      "SELECT COUNT(*) AS low_stock FROM products WHERE stock <= 5"
+    );
+
+    // Sales trend for last 7 days
+    const salesTrendResult = await db.query(`
+      SELECT DATE(created_at) AS date, SUM(total) AS revenue
+      FROM orders
+      WHERE status = 'paid'
+      AND created_at >= CURRENT_DATE - INTERVAL '7 days'
+      GROUP BY DATE(created_at)
+      ORDER BY DATE(created_at) ASC
+    `);
+
+    // Category distribution
+    const categoryStatsResult = await db.query(`
+      SELECT c.name AS name, COUNT(p.id) AS value
+      FROM categories c
+      LEFT JOIN products p ON c.id = p.category_id
+      GROUP BY c.id, c.name
+    `);
+
+    res.status(200).json({
+      totalRevenue: parseFloat(revenueResult.rows[0].total_revenue) || 0,
+      totalOrders: parseInt(ordersResult.rows[0].total_orders, 10) || 0,
+      totalAdmins: parseInt(adminsResult.rows[0].total_admins, 10) || 0,
+      totalProducts: parseInt(productsResult.rows[0].total_products, 10) || 0,
+      lowStock: parseInt(lowStockResult.rows[0].low_stock, 10) || 0,
+      salesTrend: salesTrendResult.rows,
+      categoryStats: categoryStatsResult.rows,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 export const uploadProfilePic = async (req, res) => {
   const user = req.user;
-  if (!req.file) return res.status(400).json({ message: "No file uploaded" });
+  if (!req.file) {
+    return res.status(400).json({ message: "No file uploaded" });
+  }
 
   const filename = req.file.filename;
 
   try {
     // Try to update first
     try {
-      await db.query(`UPDATE admins SET profile_pic = ? WHERE admin_id = ?`, [filename, user.admin_id]);
+      await db.query(
+        "UPDATE admins SET profile_pic = $1 WHERE admin_id = $2",
+        [filename, user.admin_id]
+      );
     } catch (updateErr) {
-      // If it fails because column doesn't exist, try to add it
-      if (updateErr.code === 'ER_BAD_FIELD_ERROR') {
-        await db.query(`ALTER TABLE admins ADD COLUMN profile_pic VARCHAR(255) DEFAULT NULL`);
-        await db.query(`UPDATE admins SET profile_pic = ? WHERE admin_id = ?`, [filename, user.admin_id]);
+      // If it fails because column doesn't exist, Postgres error code is 42703 ("undefined column")
+      if (updateErr.code === "42703") {
+        await db.query("ALTER TABLE admins ADD COLUMN profile_pic VARCHAR(255) DEFAULT NULL");
+        await db.query(
+          "UPDATE admins SET profile_pic = $1 WHERE admin_id = $2",
+          [filename, user.admin_id]
+        );
       } else {
         throw updateErr;
       }
     }
-    res.status(200).json({ message: "Profile picture updated successfully", filename });
+
+    res.status(200).json({
+      message: "Profile picture updated successfully",
+      filename,
+    });
   } catch (error) {
     console.error("Upload Error:", error);
     return res.status(500).json({ error: error?.message });

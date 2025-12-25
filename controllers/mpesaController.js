@@ -3,7 +3,7 @@ import moment from "moment";
 import { db } from "../config/connect_database.js";
 import { createNotification } from "./controlNotifications.js";
 
-//Generate Access Token
+// Generate Access Token
 const getAccessToken = async () => {
   const auth = Buffer.from(
     `${process.env.MPESA_CONSUMER_KEY}:${process.env.MPESA_CONSUMER_SECRET}`
@@ -37,14 +37,14 @@ export const stkPush = async (req, res) => {
     };
 
     const missingVars = Object.entries(requiredEnvVars)
-      .filter(([key, value]) => !value)
+      .filter(([_, value]) => !value)
       .map(([key]) => key);
 
     if (missingVars.length > 0) {
       console.error("Missing M-Pesa environment variables:", missingVars);
       return res.status(500).json({
         message: `Server configuration error: Missing ${missingVars.join(", ")}`,
-        missingVars
+        missingVars,
       });
     }
 
@@ -83,12 +83,14 @@ export const stkPush = async (req, res) => {
     const checkoutRequestID = response.data.CheckoutRequestID;
 
     // Store the checkoutRequestID in the order record
-    // We should ensure the `orders` table has this column.
     try {
-      await db.query(`UPDATE orders SET checkout_request_id = ? WHERE id = ?`, [checkoutRequestID, orderId]);
+      await db.query(
+        `UPDATE orders SET checkout_request_id = $1 WHERE id = $2`,
+        [checkoutRequestID, orderId]
+      );
     } catch (dbErr) {
       console.error("Failed to store CheckoutRequestID:", dbErr.message);
-      // If column doesn't exist, we might need to add it:
+      // If column doesn't exist, you may need:
       // ALTER TABLE orders ADD COLUMN checkout_request_id VARCHAR(255);
     }
 
@@ -98,16 +100,19 @@ export const stkPush = async (req, res) => {
     console.error("Full error details:", JSON.stringify(error.response?.data, null, 2));
     console.error("Error type:", error.code);
     console.error("Request URL:", error.config?.url);
-    
+
     res.status(500).json({
-      message: error.response?.data?.errorMessage || error.response?.data?.message || error.message,
+      message:
+        error.response?.data?.errorMessage ||
+        error.response?.data?.message ||
+        error.message,
       errorCode: error.code,
-      ...error.response?.data
+      ...error.response?.data,
     });
   }
 };
 
-//  Handle Callback
+// Handle Callback
 export const mpesaCallback = async (req, res) => {
   try {
     const { Body } = req.body;
@@ -119,21 +124,25 @@ export const mpesaCallback = async (req, res) => {
 
     if (resultCode === 0) {
       // Payment successful
-      await db.query(`UPDATE orders SET status = 'paid' WHERE id = ?`, [orderId]);
+      await db.query(`UPDATE orders SET status = 'paid' WHERE id = $1`, [orderId]);
 
       // Notify the customer
-      const [[order]] = await db.query(`SELECT customer_id FROM orders WHERE id = ?`, [orderId]);
+      const orderResult = await db.query(
+        `SELECT customer_id FROM orders WHERE id = $1`,
+        [orderId]
+      );
+      const order = orderResult.rows[0];
       if (order) {
         await createNotification(
           order.customer_id,
-          'payment',
-          'Payment Confirmed!',
+          "payment",
+          "Payment Confirmed!",
           `Payment for Order #${orderId} was successful. We are now processing your shipment.`
         );
       }
     } else {
       // Payment failed
-      await db.query(`UPDATE orders SET status = 'pending' WHERE id = ?`, [orderId]);
+      await db.query(`UPDATE orders SET status = 'pending' WHERE id = $1`, [orderId]);
     }
 
     res.json({ message: "Callback processed" });

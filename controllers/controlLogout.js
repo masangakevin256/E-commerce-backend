@@ -10,13 +10,13 @@ export const adminLogout = async (req, res) => {
 
     // MySQL2 returns [rows, fields]
     const [rows] = await db.query(
-      `SELECT * FROM admins WHERE refresh_token = ?`,
+      `SELECT * FROM admins WHERE refresh_token = $1`,
       [refreshToken]
     );
 
     if (rows.length > 0) {
       await db.query(
-        `UPDATE admins SET refresh_token = NULL WHERE refresh_token = ?`,
+        `UPDATE admins SET refresh_token = NULL WHERE refresh_token = $1`,
         [refreshToken]
       );
 
@@ -45,18 +45,18 @@ export const customerLogout = async (req, res) => {
 
     // MySQL2 returns [rows, fields]
     const [rows] = await db.query(
-      `SELECT * FROM customers WHERE refresh_token = ?`,
+      `SELECT * FROM customers WHERE refresh_token = $1`,
       [refreshToken]
     );
 
     if (rows.length > 0) {
       await db.query(
-        `UPDATE customers SET refresh_token = NULL WHERE refresh_token = ?`,
+        `UPDATE customers SET refresh_token = NULL WHERE refresh_token = $1`,
         [refreshToken]
       );
       //change the theme to light
       await db.query(
-        `UPDATE customers SET theme_preference = 'light' WHERE customer_id = ?`,
+        `UPDATE customers SET theme_preference = 'light' WHERE customer_id = $1`,
         [customer_id]
       );
       res.clearCookie("jwt", { httpOnly: true, sameSite: "Strict" });

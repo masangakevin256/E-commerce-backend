@@ -5,45 +5,48 @@ import crypto from "crypto";
 export const requestPasswordReset = async (req, res) => {
   const { email } = req.body;
   
-  console.log('🚨 === PASSWORD RESET REQUEST (FIXED) ===');
-  console.log('Request time:', new Date().toISOString());
-  
-  if (!email) return res.status(400).json({ message: "Email required" });
+  console.log("🚨 === PASSWORD RESET REQUEST (FIXED) ===");
+console.log("Request time:", new Date().toISOString());
 
-  // Check customer
-  const [rows] = await db.query("SELECT * FROM customers WHERE email = ?", [email]);
-  if (rows.length === 0) {
-    return res.status(404).json({ message: "No account found with that email" });
-  }
+if (!email) return res.status(400).json({ message: "Email required" });
 
-  // Generate new token
-  const resetToken = crypto.randomBytes(32).toString("hex");
-  console.log('New token (first 10):', resetToken.substring(0, 10) + '...');
-  
-  // CRITICAL: Use DATETIME with explicit format
-  try {
-    await db.query(
-      "UPDATE customers SET reset_token = ?, reset_expires = DATE_ADD(NOW(), INTERVAL 15 MINUTE) WHERE email = ?",
-      [resetToken, email]
-    );
-    console.log('✓ Token saved with DATETIME expiry');
-  } catch (error) {
-    console.error('Database error:', error.message);
-    return res.status(500).json({ message: "Database error" });
-  }
+// Check customer
+const result = await db.query("SELECT * FROM customers WHERE email = $1", [email]);
+if (result.rows.length === 0) {
+  return res.status(404).json({ message: "No account found with that email" });
+}
 
-  // VERIFY with proper DATETIME format
-  const [verify] = await db.query(
-    `SELECT 
+// Generate new token
+const resetToken = crypto.randomBytes(32).toString("hex");
+console.log("New token (first 10):", resetToken.substring(0, 10) + "...");
+
+// Save token with expiry (Postgres style)
+try {
+  await db.query(
+    "UPDATE customers SET reset_token = $1, reset_expires = NOW() + interval '15 minutes' WHERE email = $2",
+    [resetToken, email]
+  );
+  console.log("✓ Token saved with TIMESTAMP expiry");
+} catch (error) {
+  console.error("Database error:", error.message);
+  return res.status(500).json({ message: "Database error" });
+}
+
+// VERIFY with proper TIMESTAMP format
+const verifyResult = await db.query(
+  `SELECT 
       reset_token,
       reset_expires,
-      DATE(reset_expires) as expiry_date_only,
-      TIME(reset_expires) as expiry_time_only,
-      NOW() as db_now,
-      TIMESTAMPDIFF(SECOND, NOW(), reset_expires) as seconds_left
-     FROM customers WHERE email = ?`,
-    [email]
-  );
+      reset_expires::date AS expiry_date_only,
+      reset_expires::time AS expiry_time_only,
+      NOW() AS db_now,
+      EXTRACT(EPOCH FROM (reset_expires - NOW())) AS seconds_left
+   FROM customers WHERE email = $1`,
+  [email]
+);
+
+const verify = verifyResult.rows[0];
+
   
   console.log('📊 === VERIFICATION ===');
   console.log('Full expiry (DATETIME):', verify[0]?.reset_expires);
@@ -63,7 +66,7 @@ export const requestPasswordReset = async (req, res) => {
   const encodedEmail = encodeURIComponent(email);
   const resetUrl = `http://localhost:3500/resetPassword/customers?email=${encodedEmail}&token=${resetToken}`;
   
-  console.log('📧 Reset URL:', resetUrl);
+ 
   
   await sendEmail({
     to: email,
@@ -214,45 +217,41 @@ export const handlePasswordReset = async (req, res) => {
   // This should only handle POST requests
   const { email, token, newPassword, confirmPassword } = req.body;
 
-  console.log('=== HANDLE PASSWORD RESET DEBUG ===');
-  console.log('Email from body:', email);
-  console.log('Token from body:', token);
-  
   if (!email || !token || !newPassword || !confirmPassword) {
-    return res.status(400).json({ 
+    return res.status(400).json({
       success: false,
-      message: "All fields are required" 
+      message: "All fields are required",
     });
   }
 
   // Validate passwords match
   if (newPassword !== confirmPassword) {
-    return res.status(400).json({ 
+    return res.status(400).json({
       success: false,
-      message: "Passwords do not match" 
+      message: "Passwords do not match",
     });
   }
 
   // Validate password strength
   if (newPassword.length < 8) {
-    return res.status(400).json({ 
+    return res.status(400).json({
       success: false,
-      message: "Password must be at least 8 characters" 
+      message: "Password must be at least 8 characters",
     });
   }
 
   // Check token validity - email should already be decoded from the form
-  const [rows] = await db.query(
-    "SELECT * FROM customers WHERE email = ? AND reset_token = ? AND reset_expires > NOW()",
-    [email, token] // email should be masangakevin60@gmail.com, not encoded
+  const result = await db.query(
+    "SELECT * FROM customers WHERE email = $1 AND reset_token = $2 AND reset_expires > NOW()",
+    [email, token]
   );
 
-  console.log('Token verification rows found:', rows.length);
-  
-  if (rows.length === 0) {
-    return res.status(400).json({ 
+  console.log("Token verification rows found:", result.rows.length);
+
+  if (result.rows.length === 0) {
+    return res.status(400).json({
       success: false,
-      message: "Invalid or expired reset link" 
+      message: "Invalid or expired reset link",
     });
   }
 
@@ -261,25 +260,23 @@ export const handlePasswordReset = async (req, res) => {
 
   // Update password and clear reset token
   await db.query(
-    "UPDATE customers SET password = ?, reset_token = NULL, reset_expires = NULL WHERE email = ?",
+    "UPDATE customers SET password = $1, reset_token = NULL, reset_expires = NULL WHERE email = $2",
     [hashedPassword, email]
   );
 
-  console.log('Password updated successfully for:', email);
+  console.log("Password updated successfully for:", email);
 
-  res.status(200).json({ 
+  res.status(200).json({
     success: true,
-    message: "Password reset successful. You can now log in." 
+    message: "Password reset successful. You can now log in.",
   });
 };
+
 // Add this NEW function to serve the password reset form
 export const serveResetPasswordForm = async (req, res) => {
   const { email, token } = req.query;
   
-  console.log('🔗 === RESET FORM REQUEST ===');
-  console.log('Email:', email);
-  console.log('Token (first 10):', token?.substring(0, 10) + '...');
-  console.log('Current time:', new Date().toISOString());
+  
   
   if (!email || !token) {
     return res.status(400).send('Invalid link');
@@ -289,54 +286,46 @@ export const serveResetPasswordForm = async (req, res) => {
   
   try {
     // Get full datetime info
-    const [rows] = await db.query(
-      `SELECT 
-        reset_token,
-        reset_expires,
-        DATE(reset_expires) as expiry_date,
-        TIME(reset_expires) as expiry_time,
-        NOW() as db_now
-       FROM customers WHERE email = ? AND reset_token = ?`,
-      [decodedEmail, token]
-    );
-    
-    console.log('📊 === DATABASE CHECK ===');
-    console.log('Rows found:', rows.length);
+   const result = await db.query(
+  `SELECT 
+      reset_token,
+      reset_expires,
+      reset_expires::date AS expiry_date,
+      reset_expires::time AS expiry_time,
+      NOW() AS db_now
+   FROM customers 
+   WHERE email = $1 AND reset_token = $2`,
+  [decodedEmail, token]
+);
+
+  const rows = result.rows;
+
+  
     
     if (rows.length === 0) {
-      console.log('❌ No matching token found');
+      
       return sendError(res, 'Invalid reset token');
     }
     
-    console.log('Stored expiry:', rows[0].reset_expires);
-    console.log('Expiry date part:', rows[0].expiry_date);
-    console.log('Expiry time part:', rows[0].expiry_time);
-    console.log('Database NOW:', rows[0].db_now);
+    
     
     // Check if expiry has time component
     if (!rows[0].expiry_time) {
-      console.error('❌ CRITICAL: Expiry has NO time component! Column is DATE type.');
-      console.error('Run: ALTER TABLE customers MODIFY reset_expires DATETIME NULL;');
+      
       return sendError(res, 'System configuration error. Please contact support.');
     }
     
     // Check expiry
     const now = new Date();
     const expiryDate = new Date(rows[0].reset_expires);
-    
-    console.log('⏰ === TIME CHECK ===');
-    console.log('Current JS time:', now.toISOString());
-    console.log('Expiry JS time:', expiryDate.toISOString());
-    console.log('Is expired?', now > expiryDate);
-    console.log('Time diff (ms):', expiryDate - now);
-    console.log('Time diff (min):', (expiryDate - now) / (1000 * 60));
+
     
     if (now > expiryDate) {
       console.log('Token expired');
       return sendError(res, `Reset link expired at ${expiryDate.toLocaleString()}`);
     }
     
-    console.log('✅ Token is VALID!');
+    
     
     // Serve the form...
     // ... your form HTML code ...
@@ -618,7 +607,7 @@ export const serveResetPasswordForm = async (req, res) => {
                 
                 // Optionally redirect after 3 seconds
                 setTimeout(() => {
-                  window.location.href = 'http://localhost:3500/login';
+                  window.location.href = "http://localhost:5173/;
                 }, 3000);
               } else {
                 showError(result.message || 'Failed to reset password');

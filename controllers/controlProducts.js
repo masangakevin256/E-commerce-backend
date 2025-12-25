@@ -1,27 +1,24 @@
 import { db } from "../config/connect_database.js";
 
-
 export const getAllProducts = async (req, res) => {
   try {
-    const [row] = await db.query(`
-          SELECT p.id, p.name, p.price, p.stock, p.image, p.description, p.category_id,
-              c.name AS category_name
-        FROM products AS p
-        LEFT JOIN categories AS c ON c.id = p.category_id
-         ORDER BY p.id DESC
-        ;
-          `);
+    const result = await db.query(`
+      SELECT p.id, p.name, p.price, p.stock, p.image, p.description, p.category_id,
+             c.name AS category_name
+      FROM products AS p
+      LEFT JOIN categories AS c ON c.id = p.category_id
+      ORDER BY p.id DESC
+    `);
 
-    res.status(200).json(row);
+    res.status(200).json(result.rows);
   } catch (error) {
     return res.status(500).json({ message: error?.message });
   }
-}
+};
 
 export const addNewProduct = async (req, res) => {
   const { name, description, price, stock, category_id } = req.body;
 
-  // Only require essential fields
   if (!name || !price || !stock || !category_id) {
     return res.status(400).json({ message: "Name, price, stock, and category are required" });
   }
@@ -30,7 +27,7 @@ export const addNewProduct = async (req, res) => {
   if (req.file) {
     image = req.file.filename;
   } else if (req.body.image) {
-    image = req.body.image; // URL case
+    image = req.body.image;
   }
 
   if (!image) {
@@ -39,14 +36,15 @@ export const addNewProduct = async (req, res) => {
 
   try {
     await db.query(
-      `INSERT INTO products (name, description, price, stock, image, category_id) VALUES (?, ?, ?, ?, ?, ?)`,
-      [name, description || '', price, stock, image, category_id]
+      `INSERT INTO products (name, description, price, stock, image, category_id) 
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [name, description || "", price, stock, image, category_id]
     );
     res.status(200).json({ message: "Product added successfully" });
   } catch (error) {
     return res.status(500).json({ message: error?.message });
   }
-}
+};
 
 export const updateProduct = async (req, res) => {
   const { id } = req.params;
@@ -56,42 +54,42 @@ export const updateProduct = async (req, res) => {
     return res.status(400).json({ message: "Product ID is required" });
   }
 
-  // Build dynamic update fields
   const fields = [];
   const values = [];
+  let paramIndex = 1;
 
   if (name) {
-    fields.push("name = ?");
+    fields.push(`name = $${paramIndex++}`);
     values.push(name);
   }
   if (description) {
-    fields.push("description = ?");
+    fields.push(`description = $${paramIndex++}`);
     values.push(description);
   }
   if (price !== undefined) {
     if (isNaN(price) || price < 0) {
       return res.status(400).json({ message: "Price must be a non-negative number" });
     }
-    fields.push("price = ?");
+    fields.push(`price = $${paramIndex++}`);
     values.push(price);
   }
   if (stock !== undefined) {
     if (isNaN(stock) || stock < 0) {
       return res.status(400).json({ message: "Stock must be a non-negative number" });
     }
-    fields.push("stock = ?");
+    fields.push(`stock = $${paramIndex++}`);
     values.push(stock);
   }
   if (category_id) {
-    fields.push("category_id = ?");
+    fields.push(`category_id = $${paramIndex++}`);
     values.push(category_id);
   }
 
   if (req.file) {
-    fields.push("image = ?");
+    fields.push(`image = $${paramIndex++}`);
     values.push(req.file.filename);
   } else if (bodyImage) {
-    fields.push("image = ?");
+    fields.push(`image = $${paramIndex++}`);
     values.push(bodyImage);
   }
 
@@ -99,13 +97,15 @@ export const updateProduct = async (req, res) => {
     return res.status(400).json({ message: "No valid fields provided for update" });
   }
 
+  values.push(id);
+
   try {
-    const [result] = await db.query(
-      `UPDATE products SET ${fields.join(", ")} WHERE id = ?`,
-      [...values, id]
+    const result = await db.query(
+      `UPDATE products SET ${fields.join(", ")} WHERE id = $${paramIndex}`,
+      values
     );
 
-    if (result.affectedRows === 0) {
+    if (result.rowCount === 0) {
       return res.status(404).json({ message: "Product not found" });
     }
 
@@ -114,25 +114,29 @@ export const updateProduct = async (req, res) => {
     res.status(500).json({ message: error?.message || "Internal server error" });
   }
 };
+
 export const deleteProduct = async (req, res) => {
   const { id } = req.params;
   if (!id) return res.status(400).json({ message: "Id required" });
   try {
-    await db.query(`DELETE FROM products WHERE id = ?`, [id]);
+    const result = await db.query(`DELETE FROM products WHERE id = $1`, [id]);
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: "Product not found" });
+    }
     res.status(200).json({ message: "Product deleted successfully" });
   } catch (error) {
     return res.status(500).json({ message: error?.message });
   }
-}
+};
 
 export const getProduct = async (req, res) => {
   const { id } = req.params;
   if (!id) return res.status(400).json({ message: "Id required" });
   try {
-    const [row] = await db.query(`SELECT *FROM products WHERE id = ?`, [id]);
-    if (row.length === 0) return res.status(404).json({ message: "Product not found!" });
-    res.status(200).json(row);
+    const result = await db.query(`SELECT * FROM products WHERE id = $1`, [id]);
+    if (result.rows.length === 0) return res.status(404).json({ message: "Product not found!" });
+    res.status(200).json(result.rows[0]);
   } catch (error) {
     return res.status(500).json({ message: error?.message });
   }
-}
+};

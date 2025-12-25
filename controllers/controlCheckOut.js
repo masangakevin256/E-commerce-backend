@@ -5,15 +5,13 @@ export const checkout = async (req, res) => {
   const { voucherCode } = req.body;
   const customer_id = req.user?.customer_id;
 
-  let connection;
+  const client = await db.connect(); // get a client from the pool
   try {
-    connection = await db.getConnection();
-    await connection.beginTransaction();
+    await client.query("BEGIN");
 
     // 1. Get cart items WITH stock
-    const [cartItems] = await connection.query(
-      `
-      SELECT 
+    const cartResult = await client.query(
+      `SELECT 
         c.product_id,
         c.quantity,
         p.price,
@@ -21,11 +19,11 @@ export const checkout = async (req, res) => {
         p.name
       FROM carts c
       JOIN products p ON c.product_id = p.id
-      WHERE c.customer_id = ?
-      `,
+      WHERE c.customer_id = $1`,
       [customer_id]
     );
 
+    const cartItems = cartResult.rows;
     if (cartItems.length === 0) {
       throw new Error("Cart is empty");
     }
@@ -49,15 +47,19 @@ export const checkout = async (req, res) => {
     // 3.1 Apply voucher if provided
     if (voucherCode) {
       try {
-        const [vouchers] = await connection.query(
-          "SELECT * FROM vouchers WHERE code = ? AND (customer_id = ? OR customer_id IS NULL) AND status = 'active' AND expiry_date > NOW()",
+        const voucherResult = await client.query(
+          `SELECT * FROM vouchers 
+           WHERE code = $1 
+             AND (customer_id = $2 OR customer_id IS NULL) 
+             AND status = 'active' 
+             AND expiry_date > NOW()`,
           [voucherCode, customer_id]
         );
 
-        if (vouchers.length > 0) {
-          const voucher = vouchers[0];
+        if (voucherResult.rows.length > 0) {
+          const voucher = voucherResult.rows[0];
           if (!voucher.min_spend || subtotal >= voucher.min_spend) {
-            if (voucher.discount_type === 'percentage') {
+            if (voucher.discount_type === "percentage") {
               discount = (voucher.discount_value / 100) * subtotal;
             } else {
               discount = voucher.discount_value;
@@ -66,8 +68,7 @@ export const checkout = async (req, res) => {
           }
         }
       } catch (vErr) {
-        console.warn("Voucher lookup failed (table might be missing):", vErr.message);
-        // Continue without voucher if table doesn't exist yet
+        console.warn("Voucher lookup failed:", vErr.message);
       }
     }
 
@@ -77,54 +78,46 @@ export const checkout = async (req, res) => {
     total = total + shipping + tax;
 
     // 4. Create order
-    const [orderResult] = await connection.query(
+    const orderResult = await client.query(
       `INSERT INTO orders (customer_id, total, status)
-       VALUES (?, ?, 'pending')`,
+       VALUES ($1, $2, 'pending')
+       RETURNING id`,
       [customer_id, total]
     );
 
-    const orderId = orderResult.insertId;
+    const orderId = orderResult.rows[0].id;
 
     // 5. Insert order items + reduce stock
     for (const item of cartItems) {
-      // insert order item
-      await connection.query(
-        `
-        INSERT INTO order_items (order_id, product_id, quantity, price)
-        VALUES (?, ?, ?, ?)
-        `,
+      await client.query(
+        `INSERT INTO order_items (order_id, product_id, quantity, price)
+         VALUES ($1, $2, $3, $4)`,
         [orderId, item.product_id, item.quantity, item.price]
       );
 
-      // reduce stock SAFELY
-      const [updateResult] = await connection.query(
-        `
-        UPDATE products
-        SET stock = stock - ?
-        WHERE id = ? AND stock >= ?
-        `,
-        [item.quantity, item.product_id, item.quantity]
+      const updateResult = await client.query(
+        `UPDATE products
+         SET stock = stock - $1
+         WHERE id = $2 AND stock >= $1`,
+        [item.quantity, item.product_id]
       );
 
-      if (updateResult.affectedRows === 0) {
+      if (updateResult.rowCount === 0) {
         throw new Error("Stock conflict detected");
       }
     }
 
     // 6. Clear cart
-    await connection.query(
-      `DELETE FROM carts WHERE customer_id = ?`,
-      [customer_id]
-    );
+    await client.query("DELETE FROM carts WHERE customer_id = $1", [customer_id]);
 
-    await connection.commit();
+    await client.query("COMMIT");
 
     // Trigger notification
     try {
       await createNotification(
         customer_id,
-        'order',
-        'Order Placed!',
+        "order",
+        "Order Placed!",
         `Your order #${orderId} for KES ${total.toFixed(2)} has been placed successfully.`
       );
     } catch (nErr) {
@@ -136,14 +129,13 @@ export const checkout = async (req, res) => {
       order_id: orderId,
       total,
     });
-
   } catch (error) {
     console.error("CRITICAL: Checkout failed -", error);
-    if (connection) await connection.rollback();
+    await client.query("ROLLBACK");
     res.status(400).json({
       message: error.message || "Checkout failed",
     });
   } finally {
-    if (connection) connection.release();
+    client.release();
   }
 };

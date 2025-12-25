@@ -10,17 +10,16 @@ export const adminRefreshToken = async (req, res) => {
 
     const refreshToken = cookies.jwt;
 
-    // MySQL2 returns [rows, fields]
-    const [rows] = await db.query(
-      `SELECT * FROM admins WHERE refresh_token = ?`,
+    const result = await db.query(
+      `SELECT * FROM admins WHERE refresh_token = $1`,
       [refreshToken]
     );
 
-    if (rows.length === 0) {
+    if (result.rows.length === 0) {
       return res.status(403).json({ message: "Invalid refresh token" });
     }
 
-    const admin = rows[0];
+    const admin = result.rows[0];
 
     jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, decoded) => {
       if (err || admin.name !== decoded?.userInfo?.name) {
@@ -34,7 +33,7 @@ export const adminRefreshToken = async (req, res) => {
             roles: admin.role,
           },
         },
-        process.env.ACCESS_TOKEN_SECRET, 
+        process.env.ACCESS_TOKEN_SECRET,
         { expiresIn: "10m" }
       );
 
@@ -55,17 +54,16 @@ export const customerRefreshToken = async (req, res) => {
 
     const refreshToken = cookies.jwt;
 
-    // MySQL2 returns [rows, fields]
-    const [rows] = await db.query(
-      `SELECT * FROM customers WHERE refresh_token = ?`,
+    const result = await db.query(
+      `SELECT * FROM customers WHERE refresh_token = $1`,
       [refreshToken]
     );
 
-    if (rows.length === 0) {
+    if (result.rows.length === 0) {
       return res.status(403).json({ message: "Invalid refresh token" });
     }
 
-    const customer = rows[0];
+    const customer = result.rows[0];
 
     jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, decoded) => {
       if (err || customer.name !== decoded?.userInfo?.name) {
@@ -79,15 +77,14 @@ export const customerRefreshToken = async (req, res) => {
             roles: customer.role,
           },
         },
-        process.env.ACCESS_TOKEN_SECRET, 
+        process.env.ACCESS_TOKEN_SECRET,
         { expiresIn: "10m" }
       );
 
       res.json({ accessToken });
-    });  
+    });
   } catch (error) {
     console.error("Refresh token error:", error);
     res.status(500).json({ message: "Server error during token refresh" });
   }
-};  
-    
+};

@@ -6,22 +6,24 @@ const verifyToken = crypto.randomBytes(32).toString("hex");
 
 export const getAllCustomers = async (req, res) => {
   try {
-    //admin get all customers and customer get himself only
     const user = req.user;
     const role = user.roles;
-    let row;
+    let result;
+
     if (role === "admin") {
-      [row] = await db.query("SELECT * FROM customers");
+      result = await db.query("SELECT * FROM customers");
     } else {
-      [row] = await db.query(`SELECT * FROM customers WHERE customer_id = ?`, [user.customer_id]);
+      result = await db.query(
+        "SELECT * FROM customers WHERE customer_id = $1",
+        [user.customer_id]
+      );
     }
-    res.status(200).json(row);
 
-
+    res.status(200).json(result.rows);
   } catch (error) {
     return res.status(500).json({ error: error?.message });
   }
-}
+};
 
 export const addNewCustomer = async (req, res) => {
 
@@ -31,56 +33,76 @@ export const addNewCustomer = async (req, res) => {
   if (!email || !name || !password || !phoneNumber) {
     return res.status(400).json({ message: "All fields are required" });
   }
+
   try {
-    // 1. Ensure referral columns exist
+    // 1. Ensure referral columns exist (Postgres will throw "column does not exist" error, not ER_BAD_FIELD_ERROR)
     try {
       await db.query(`SELECT referral_code FROM customers LIMIT 1`);
     } catch (err) {
-      if (err.code === 'ER_BAD_FIELD_ERROR') {
+      if (err.code === '42703') { // Postgres error code for "undefined column"
         await db.query(`ALTER TABLE customers ADD COLUMN referral_code VARCHAR(20) UNIQUE DEFAULT NULL`);
         await db.query(`ALTER TABLE customers ADD COLUMN referred_by VARCHAR(20) DEFAULT NULL`);
       }
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const [rows] = await db.query("SELECT customer_id FROM customers ORDER BY created_at DESC LIMIT 1");
+
+    // Get last customer_id
+    const lastCustomerResult = await db.query(
+      "SELECT customer_id FROM customers ORDER BY created_at DESC LIMIT 1"
+    );
 
     let customer_id;
-    if (rows.length === 0) {
+    if (lastCustomerResult.rows.length === 0) {
       customer_id = "CU001";
     } else {
-      const lastId = rows[0].customer_id;
+      const lastId = lastCustomerResult.rows[0].customer_id;
       const num = parseInt(lastId.replace("CU", ""), 10) + 1;
       customer_id = `CU${String(num).padStart(3, "0")}`;
     }
 
-    // Generate unique referral code (e.g., NAME123)
+    // Generate unique referral code (e.g., NAM123)
     const referral_code = `${name.substring(0, 3).toUpperCase()}${Math.floor(100 + Math.random() * 900)}`;
 
     // Handle being referred
     let referred_by_id = null;
     if (referredByCode) {
-      const [referrer] = await db.query("SELECT customer_id FROM customers WHERE referral_code = ?", [referredByCode]);
-      if (referrer.length > 0) {
-        referred_by_id = referrer[0].customer_id;
+      const referrerResult = await db.query(
+        "SELECT customer_id FROM customers WHERE referral_code = $1",
+        [referredByCode]
+      );
+
+      if (referrerResult.rows.length > 0) {
+        referred_by_id = referrerResult.rows[0].customer_id;
+
         // Award 10 points to referrer
-        await db.query("UPDATE customers SET loyalty_points = loyalty_points + 10 WHERE customer_id = ?", [referred_by_id]);
-        await db.query("INSERT INTO points_history (customer_id, points_change, reason) VALUES (?, ?, ?)",
-          [referred_by_id, 10, `Referral bonus from ${name}`]);
+        await db.query(
+          "UPDATE customers SET loyalty_points = loyalty_points + 10 WHERE customer_id = $1",
+          [referred_by_id]
+        );
+
+        await db.query(
+          "INSERT INTO points_history (customer_id, points_change, reason) VALUES ($1, $2, $3)",
+          [referred_by_id, 10, `Referral bonus from ${name}`]
+        );
       }
     }
 
+    // Insert new customer
     await db.query(
-      `
-            INSERT INTO customers (customer_id, name, email, verify_email, password, phoneNumber, verify_token, refresh_token, referral_code, referred_by)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            `, [customer_id, name, email, "pending", hashedPassword, phoneNumber, verifyToken, "", referral_code, referred_by_id]
+      `INSERT INTO customers 
+        (customer_id, name, email, verify_email, password, phoneNumber, verify_token, refresh_token, referral_code, referred_by)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+      [customer_id, name, email, "pending", hashedPassword, phoneNumber, verifyToken, "", referral_code, referred_by_id]
     );
+
     const message = `Customer ${name} created account`;
+
     await db.query(
-            "INSERT INTO messages (admin_id, type, title, message, created_at) VALUES (?, ?, ?, ?, ? )",
-            ["AD001", "New customer", "New customer added", message, new Date()]
-        );
+      "INSERT INTO messages (admin_id, type, title, message, created_at) VALUES ($1, $2, $3, $4, $5)",
+      ["AD001", "New customer", "New customer added", message, new Date()]
+    );
+
     await sendEmail({
       to: email,
       subject: "🔐 Verify Your Email - Kisii University E‑Commerce",
@@ -295,6 +317,8 @@ export const addNewCustomer = async (req, res) => {
     return res.status(500).json({ error: error?.message });
   }
 }
+
+
 export const updateCustomer = async (req, res) => {
   const user = req.user;
   const role = user.roles;
@@ -304,28 +328,29 @@ export const updateCustomer = async (req, res) => {
   if (!id) return res.status(404).json({ message: "Id required" });
 
   try {
-    // Safeguard: Ensure columns exist
+    // Safeguard: Ensure columns exist (Postgres error code 42703 = undefined column)
     try {
       await db.query(`SELECT address, phoneNumber FROM customers LIMIT 1`);
     } catch (schemaErr) {
-      if (schemaErr.code === 'ER_BAD_FIELD_ERROR') {
-        if (schemaErr.sqlMessage.includes('address')) {
-          await db.query(`ALTER TABLE customers ADD COLUMN address TEXT DEFAULT NULL`);
-        }
-        if (schemaErr.sqlMessage.includes('phoneNumber')) {
-          await db.query(`ALTER TABLE customers ADD COLUMN phoneNumber VARCHAR(20) DEFAULT NULL`);
-        }
+      if (schemaErr.code === "42703") {
+        // Add missing columns
+        await db.query(`ALTER TABLE customers ADD COLUMN IF NOT EXISTS address TEXT DEFAULT NULL`);
+        await db.query(`ALTER TABLE customers ADD COLUMN IF NOT EXISTS phoneNumber VARCHAR(20) DEFAULT NULL`);
       }
     }
 
     // Fetch customer by ID
-    const [rows] = await db.query(`SELECT * FROM customers WHERE customer_id = ?`, [id]);
-    if (rows.length === 0) {
+    const result = await db.query("SELECT * FROM customers WHERE customer_id = $1", [id]);
+    if (result.rows.length === 0) {
       return res.status(404).json({ message: "Customer not found!" });
     }
-    //customer can only update themselves
-    if (role === "customer" && rows[0].customer_id !== user.customer_id) return res.status(400).json({ message: "Unauthorized" });
-    const customer = rows[0];
+
+    // customer can only update themselves
+    if (role === "customer" && result.rows[0].customer_id !== user.customer_id) {
+      return res.status(400).json({ message: "Unauthorized" });
+    }
+
+    const customer = result.rows[0];
     let hashedPassword = customer.password; // keep old password by default
 
     // If password change requested
@@ -334,36 +359,35 @@ export const updateCustomer = async (req, res) => {
       if (!isMatch) {
         return res.status(400).json({ message: "Incorrect current password" });
       }
-      //check if the recent password is the same as the new password
       if (password === newPassword) {
         return res.status(400).json({ message: "New password cannot be the same as the current password" });
       }
-
       hashedPassword = await bcrypt.hash(newPassword, 10);
     }
 
     // Build dynamic update fields
     const fields = [];
     const values = [];
+    let paramIndex = 1;
 
     if (name) {
-      fields.push("name = ?");
+      fields.push(`name = $${paramIndex++}`);
       values.push(name);
     }
     if (email) {
-      fields.push("email = ?");
+      fields.push(`email = $${paramIndex++}`);
       values.push(email);
     }
     if (phoneNumber) {
-      fields.push("phoneNumber = ?");
+      fields.push(`phoneNumber = $${paramIndex++}`);
       values.push(phoneNumber);
     }
     if (address) {
-      fields.push("address = ?");
+      fields.push(`address = $${paramIndex++}`);
       values.push(address);
     }
     if (newPassword) {
-      fields.push("password = ?");
+      fields.push(`password = $${paramIndex++}`);
       values.push(hashedPassword);
     }
 
@@ -371,10 +395,10 @@ export const updateCustomer = async (req, res) => {
       return res.status(400).json({ message: "No fields provided to update" });
     }
 
-    values.push(id); // for WHERE clause
+    values.push(id);
 
     await db.query(
-      `UPDATE customers SET ${fields.join(", ")} WHERE customer_id = ?`,
+      `UPDATE customers SET ${fields.join(", ")} WHERE customer_id = $${paramIndex}`,
       values
     );
 
@@ -389,12 +413,12 @@ export const deleteCustomer = async (req, res) => {
   if (!id) return res.status(404).json({ message: "Id required" });
 
   try {
-    const [rows] = await db.query(`SELECT * FROM customers WHERE customer_id = ?`, [id]);
-    if (rows.length === 0) {
+    const result = await db.query("SELECT * FROM customers WHERE customer_id = $1", [id]);
+    if (result.rows.length === 0) {
       return res.status(404).json({ message: "Customer not found!" });
     }
 
-    await db.query(`DELETE FROM customers WHERE customer_id = ?`, [id]);
+    await db.query("DELETE FROM customers WHERE customer_id = $1", [id]);
     res.status(200).json({ message: "Customer deleted successfully" });
   } catch (error) {
     return res.status(500).json({ error: error?.message });
@@ -408,14 +432,18 @@ export const getCustomer = async (req, res) => {
   if (!id) return res.status(404).json({ message: "Id required" });
 
   try {
-    const [rows] = await db.query(`SELECT * FROM customers WHERE customer_id = ?`, [id]);
-    //customers can oly get themselves
-    if (role === "customer" && rows[0].customer_id !== user.customer_id) return res.status(400).json({ message: "Unauthorized" });
-    if (rows.length === 0) {
+    const result = await db.query("SELECT * FROM customers WHERE customer_id = $1", [id]);
+
+    if (result.rows.length === 0) {
       return res.status(404).json({ message: "Customer not found!" });
     }
 
-    res.status(200).json(rows);
+    // customers can only get themselves
+    if (role === "customer" && result.rows[0].customer_id !== user.customer_id) {
+      return res.status(400).json({ message: "Unauthorized" });
+    }
+
+    res.status(200).json(result.rows[0]);
   } catch (error) {
     return res.status(500).json({ error: error?.message });
   }
@@ -428,14 +456,12 @@ export const uploadProfilePic = async (req, res) => {
   const filename = req.file.filename;
 
   try {
-    // Try to update first
     try {
-      await db.query(`UPDATE customers SET profile_pic = ? WHERE customer_id = ?`, [filename, user.customer_id]);
+      await db.query("UPDATE customers SET profile_pic = $1 WHERE customer_id = $2", [filename, user.customer_id]);
     } catch (updateErr) {
-      // If it fails because column doesn't exist, try to add it
-      if (updateErr.code === 'ER_BAD_FIELD_ERROR') {
-        await db.query(`ALTER TABLE customers ADD COLUMN profile_pic VARCHAR(255) DEFAULT NULL`);
-        await db.query(`UPDATE customers SET profile_pic = ? WHERE customer_id = ?`, [filename, user.customer_id]);
+      if (updateErr.code === "42703") {
+        await db.query("ALTER TABLE customers ADD COLUMN IF NOT EXISTS profile_pic VARCHAR(255) DEFAULT NULL");
+        await db.query("UPDATE customers SET profile_pic = $1 WHERE customer_id = $2", [filename, user.customer_id]);
       } else {
         throw updateErr;
       }
