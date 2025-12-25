@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Verified Successfully - Kisii University E‑Commerce</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', Arial, sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: #334155;
+        }
+        
+        .success-container {
+            max-width: 520px;
+            width: 100%;
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 64, 128, 0.15);
+            animation: fadeIn 0.6s ease-out;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #004080 0%, #0066cc 100%);
+            padding: 48px 32px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
+            background-size: 20px 20px;
+            animation: float 20s linear infinite;
+            opacity: 0.3;
+        }
+        
+        .checkmark-circle {
+            width: 100px;
+            height: 100px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+            position: relative;
+            z-index: 2;
+            animation: scaleIn 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55) 0.3s both;
+        }
+        
+        .checkmark {
+            width: 48px;
+            height: 48px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: checkmark 0.6s cubic-bezier(0.65, 0, 0.45, 1) 0.8s both;
+        }
+        
+        .checkmark svg {
+            width: 24px;
+            height: 24px;
+            color: #004080;
+        }
+        
+        .header h1 {
+            color: white;
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            position: relative;
+            z-index: 2;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header p {
+            color: rgba(255, 255, 255, 0.95);
+            font-size: 16px;
+            font-weight: 400;
+            opacity: 0;
+            animation: fadeInUp 0.6s ease-out 1s both;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .content {
+            padding: 48px 40px;
+            text-align: center;
+        }
+        
+        .success-title {
+            color: #004080;
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            animation: fadeInUp 0.6s ease-out 1.2s both;
+        }
+        
+        .success-message {
+            color: #64748b;
+            font-size: 17px;
+            line-height: 1.6;
+            margin-bottom: 32px;
+            animation: fadeInUp 0.6s ease-out 1.4s both;
+        }
+        
+        .confetti {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: #ffd700;
+            border-radius: 50%;
+            animation: confetti 3s ease-out infinite;
+            opacity: 0;
+        }
+        
+        .status-card {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            border-radius: 16px;
+            padding: 28px;
+            margin: 32px 0;
+            border: 1px solid #bae6fd;
+            animation: fadeInUp 0.6s ease-out 1.6s both;
+        }
+        
+        .status-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        
+        .status-header svg {
+            width: 24px;
+            height: 24px;
+            color: #004080;
+        }
+        
+        .status-title {
+            color: #004080;
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .status-list {
+            text-align: left;
+            max-width: 320px;
+            margin: 0 auto;
+        }
+        
+        .status-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 12px;
+            padding: 8px 0;
+        }
+        
+        .status-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .status-item svg {
+            width: 18px;
+            height: 18px;
+            color: #10b981;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+        
+        .status-item span {
+            color: #475569;
+            font-size: 15px;
+            line-height: 1.5;
+        }
+        
+        .next-steps {
+            margin-top: 40px;
+            padding-top: 32px;
+            border-top: 1px solid #e2e8f0;
+            animation: fadeInUp 0.6s ease-out 1.8s both;
+        }
+        
+        .next-steps h3 {
+            color: #004080;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+        
+        .steps {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            align-items: center;
+        }
+        
+        .step {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px 20px;
+            background: #f8fafc;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 320px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .step:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 64, 128, 0.1);
+        }
+        
+        .step-number {
+            width: 36px;
+            height: 36px;
+            background: #004080;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+        
+        .step-text {
+            color: #475569;
+            font-size: 15px;
+            text-align: left;
+            flex: 1;
+        }
+        
+        .footer {
+            background: #1e293b;
+            padding: 32px;
+            text-align: center;
+        }
+        
+        .footer-logo {
+            color: white;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .footer-tagline {
+            color: #cbd5e1;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+        
+        .footer-note {
+            color: #94a3b8;
+            font-size: 12px;
+            line-height: 1.5;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #334155;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes scaleIn {
+            0% {
+                transform: scale(0);
+                opacity: 0;
+            }
+            70% {
+                transform: scale(1.1);
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        
+        @keyframes checkmark {
+            0% {
+                transform: scale(0);
+            }
+            50% {
+                transform: scale(1.2);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+        
+        @keyframes float {
+            0% {
+                transform: translate(0, 0) rotate(0deg);
+            }
+            100% {
+                transform: translate(-10px, -10px) rotate(360deg);
+            }
+        }
+        
+        @keyframes confetti {
+            0% {
+                transform: translateY(0) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(100vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
+        
+        /* Generate confetti */
+        .confetti-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1000;
+        }
+        
+        @media (max-width: 640px) {
+            .success-container {
+                max-width: 100%;
+            }
+            
+            .header {
+                padding: 40px 24px;
+            }
+            
+            .header h1 {
+                font-size: 28px;
+            }
+            
+            .content {
+                padding: 40px 24px;
+            }
+            
+            .success-title {
+                font-size: 24px;
+            }
+            
+            .status-card {
+                padding: 24px;
+            }
+            
+            .step {
+                flex-direction: column;
+                text-align: center;
+                gap: 12px;
+            }
+            
+            .step-text {
+                text-align: center;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            body {
+                padding: 16px;
+            }
+            
+            .header {
+                padding: 32px 20px;
+            }
+            
+            .checkmark-circle {
+                width: 80px;
+                height: 80px;
+            }
+            
+            .checkmark {
+                width: 40px;
+                height: 40px;
+            }
+            
+            .header h1 {
+                font-size: 24px;
+            }
+            
+            .content {
+                padding: 32px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Confetti Animation -->
+    <div class="confetti-container" id="confettiContainer"></div>
+    
+    <!-- Success Container -->
+    <div class="success-container">
+        <!-- Header Section -->
+        <div class="header">
+            <div class="checkmark-circle">
+                <div class="checkmark">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                    </svg>
+                </div>
+            </div>
+            <h1>Email Verified Successfully!</h1>
+            <p>Kisii University E‑Commerce</p>
+        </div>
+        
+        <!-- Content Section -->
+        <div class="content">
+            <h2 class="success-title">Welcome to the Community! 🎉</h2>
+            <p class="success-message">
+                Your email address has been successfully verified. Your account is now active and ready to use.
+            </p>
+            
+            <!-- Status Card -->
+            <div class="status-card">
+                <div class="status-header">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div class="status-title">Account Status: Active</div>
+                </div>
+                <div class="status-list">
+                    <div class="status-item">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                        <span>Email verification completed</span>
+                    </div>
+                    <div class="status-item">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                        <span>Account security confirmed</span>
+                    </div>
+                    <div class="status-item">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                        <span>Full marketplace access granted</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Next Steps -->
+            <div class="next-steps">
+                <h3>You're All Set! Here's What's Next:</h3>
+                <div class="steps">
+                    <div class="step">
+                        <div class="step-number">1</div>
+                        <div class="step-text">Return to the login page on your device</div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">2</div>
+                        <div class="step-text">Enter your credentials to access your account</div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">3</div>
+                        <div class="step-text">Start exploring products from university vendors</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <div class="footer">
+            <div class="footer-logo">Kisii University E‑Commerce</div>
+            <div class="footer-tagline">Connecting students with trusted campus vendors</div>
+            <div class="footer-note">
+                © ${new Date().getFullYear()} Kisii University. All rights reserved.<br>
+                P.O Box 408-40200, Kisii, Kenya<br>
+                <small>This is a secure confirmation of your email verification.</small>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Generate confetti animation
+        function createConfetti() {
+            const container = document.getElementById('confettiContainer');
+            const colors = ['#ffd700', '#004080', '#0066cc', '#10b981', '#8b5cf6'];
+            
+            for (let i = 0; i < 150; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                
+                // Random properties
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                const size = Math.random() * 10 + 5;
+                const left = Math.random() * 100;
+                const delay = Math.random() * 3;
+                const duration = Math.random() * 2 + 2;
+                
+                confetti.style.width = `${size}px`;
+                confetti.style.height = `${size}px`;
+                confetti.style.background = color;
+                confetti.style.left = `${left}%`;
+                confetti.style.animationDelay = `${delay}s`;
+                confetti.style.animationDuration = `${duration}s`;
+                
+                container.appendChild(confetti);
+                
+                // Remove confetti after animation
+                setTimeout(() => {
+                    confetti.remove();
+                }, (delay + duration) * 1000);
+            }
+        }
+        
+        // Start animations when page loads
+        window.addEventListener('load', () => {
+            // Create confetti with delay
+            setTimeout(createConfetti, 500);
+            
+            // Add success sound simulation (visual only)
+            const successSoundSimulation = () => {
+                // Visual feedback for sound
+                const checkmark = document.querySelector('.checkmark');
+                checkmark.style.boxShadow = '0 0 0 10px rgba(0, 100, 204, 0.1)';
+                setTimeout(() => {
+                    checkmark.style.boxShadow = 'none';
+                }, 300);
+            };
+            
+            setTimeout(successSoundSimulation, 1000);
+        });
+        
+        // Add pulsing animation to success title
+        setTimeout(() => {
+            const title = document.querySelector('.success-title');
+            setInterval(() => {
+                title.style.transform = 'scale(1.02)';
+                setTimeout(() => {
+                    title.style.transform = 'scale(1)';
+                }, 500);
+            }, 2000);
+        }, 2000);
+    </script>
+</body>
+</html>
