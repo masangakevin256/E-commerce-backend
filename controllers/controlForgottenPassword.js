@@ -606,7 +606,7 @@ export const serveResetPasswordForm = async (req, res) => {
                 
                 // Optionally redirect after 3 seconds
                 setTimeout(() => {
-                  window.location.href = "http://localhost:5173/;
+                  window.location.href = "https://kisiiuniversityecommerceplatform.vercel.app;
                 }, 3000);
               } else {
                 showError(result.message || 'Failed to reset password');
