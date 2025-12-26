@@ -2,17 +2,92 @@ import { db } from "../config/connect_database.js";
 
 export const getAllProducts = async (req, res) => {
   try {
-    const result = await db.query(`
+    // Get query parameters with defaults
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 100; // Changed from 12 to 100
+    const search = req.query.search || '';
+    const category_id = req.query.category_id || '';
+    const sort_by = req.query.sort_by || 'p.created_at';
+    const sort_order = req.query.sort_order || 'DESC';
+    
+    // Calculate offset
+    const offset = (page - 1) * limit;
+    
+    // Build WHERE conditions dynamically
+    const whereConditions = [];
+    const queryParams = [];
+    
+    // Add search condition if provided
+    if (search) {
+      whereConditions.push(`(p.name ILIKE $${queryParams.length + 1} OR p.description ILIKE $${queryParams.length + 1})`);
+      queryParams.push(`%${search}%`);
+    }
+    
+    // Add category filter if provided
+    if (category_id) {
+      whereConditions.push(`p.category_id = $${queryParams.length + 1}`);
+      queryParams.push(category_id);
+    }
+    
+    // Combine WHERE conditions
+    const whereClause = whereConditions.length > 0 
+      ? `WHERE ${whereConditions.join(' AND ')}` 
+      : '';
+    
+    // Build the main query
+    const productsQuery = `
       SELECT p.id, p.name, p.price, p.stock, p.image, p.description, p.category_id,
              c.name AS category_name
       FROM products AS p
       LEFT JOIN categories AS c ON c.id = p.category_id
-      ORDER BY p.id DESC
-    `);
-
-    res.status(200).json(result.rows);
+      ${whereClause}
+      ORDER BY ${sort_by} ${sort_order}
+      LIMIT $${queryParams.length + 1}
+      OFFSET $${queryParams.length + 2}
+    `;
+    
+    // Add limit and offset to query params
+    queryParams.push(limit, offset);
+    
+    // Execute products query
+    const result = await db.query(productsQuery, queryParams);
+    
+    // Get total count for pagination
+    const countQuery = `
+      SELECT COUNT(*) as total_count
+      FROM products AS p
+      ${whereClause}
+    `;
+    
+    // Remove limit and offset from params for count query
+    const countParams = queryParams.slice(0, -2);
+    const countResult = await db.query(countQuery, countParams);
+    const totalCount = parseInt(countResult.rows[0].total_count);
+    
+    // Calculate total pages
+    const totalPages = Math.ceil(totalCount / limit);
+    
+    // Send response with pagination info
+    res.status(200).json({
+      success: true,
+      products: result.rows,
+      pagination: {
+        currentPage: page,
+        totalPages: totalPages,
+        totalProducts: totalCount,
+        limit: limit,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1
+      }
+    });
+    
   } catch (error) {
-    return res.status(500).json({ message: error?.message });
+    console.error('Error fetching products:', error);
+    return res.status(500).json({ 
+      success: false,
+      message: 'Error fetching products',
+      error: error?.message 
+    });
   }
 };
 
