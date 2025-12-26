@@ -7,7 +7,21 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        :root {
+            --primary-blue: #004080;
+            --secondary-blue: #0066cc;
+            --accent-blue: #0088ff;
+            --success-green: #10b981;
+            --light-bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --border-color: #e2e8f0;
+            --shadow-color: rgba(0, 64, 128, 0.1);
+        }
+        
         * {
             margin: 0;
             padding: 0;
@@ -16,28 +30,79 @@
         
         body {
             font-family: 'Inter', Arial, sans-serif;
-            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            background: linear-gradient(135deg, var(--light-bg) 0%, #f1f5f9 100%);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 20px;
-            color: #334155;
+            color: var(--text-primary);
+            overflow-x: hidden;
         }
         
-        .success-container {
+        .container {
             max-width: 520px;
             width: 100%;
-            background: white;
-            border-radius: 20px;
-            overflow: hidden;
-            box-shadow: 0 20px 60px rgba(0, 64, 128, 0.15);
-            animation: fadeIn 0.6s ease-out;
+            animation: fadeIn 0.8s ease-out;
         }
         
+        .success-card {
+            background: var(--card-bg);
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px var(--shadow-color);
+            position: relative;
+            z-index: 2;
+        }
+        
+        /* Animated Background Elements */
+        .bg-elements {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: 1;
+            pointer-events: none;
+        }
+        
+        .bg-circle {
+            position: absolute;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(0, 100, 204, 0.05) 0%, transparent 70%);
+            animation: float 20s infinite linear;
+        }
+        
+        .circle-1 {
+            width: 300px;
+            height: 300px;
+            top: -150px;
+            right: -150px;
+            animation-delay: 0s;
+        }
+        
+        .circle-2 {
+            width: 200px;
+            height: 200px;
+            bottom: -100px;
+            left: -100px;
+            animation-delay: -5s;
+            animation-direction: reverse;
+        }
+        
+        .circle-3 {
+            width: 150px;
+            height: 150px;
+            top: 50%;
+            left: -75px;
+            animation-delay: -10s;
+        }
+        
+        /* Header Section */
         .header {
-            background: linear-gradient(135deg, #004080 0%, #0066cc 100%);
-            padding: 48px 32px;
+            background: linear-gradient(135deg, var(--primary-blue) 0%, var(--secondary-blue) 100%);
+            padding: 50px 32px 40px;
             text-align: center;
             position: relative;
             overflow: hidden;
@@ -46,54 +111,57 @@
         .header::before {
             content: '';
             position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
-            background-size: 20px 20px;
-            animation: float 20s linear infinite;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
             opacity: 0.3;
         }
         
-        .checkmark-circle {
-            width: 100px;
-            height: 100px;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 24px;
+        .checkmark-container {
             position: relative;
-            z-index: 2;
-            animation: scaleIn 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55) 0.3s both;
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 28px;
         }
         
-        .checkmark {
-            width: 48px;
-            height: 48px;
-            background: white;
+        .outer-circle {
+            width: 120px;
+            height: 120px;
             border-radius: 50%;
+            background: rgba(255, 255, 255, 0.15);
             display: flex;
             align-items: center;
             justify-content: center;
-            animation: checkmark 0.6s cubic-bezier(0.65, 0, 0.45, 1) 0.8s both;
+            position: relative;
+            animation: pulseCircle 2s infinite;
         }
         
-        .checkmark svg {
-            width: 24px;
-            height: 24px;
-            color: #004080;
+        .inner-circle {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .checkmark-icon {
+            width: 40px;
+            height: 40px;
+            color: var(--primary-blue);
+            animation: checkmarkDraw 1s ease-out 0.5s both;
         }
         
         .header h1 {
             color: white;
-            font-size: 32px;
+            font-size: 34px;
             font-weight: 700;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
             position: relative;
-            z-index: 2;
             text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
         
@@ -101,236 +169,236 @@
             color: rgba(255, 255, 255, 0.95);
             font-size: 16px;
             font-weight: 400;
-            opacity: 0;
-            animation: fadeInUp 0.6s ease-out 1s both;
             position: relative;
-            z-index: 2;
         }
         
+        /* Content Section */
         .content {
             padding: 48px 40px;
             text-align: center;
         }
         
         .success-title {
-            color: #004080;
+            color: var(--primary-blue);
             font-size: 28px;
-            font-weight: 600;
+            font-weight: 700;
             margin-bottom: 16px;
-            animation: fadeInUp 0.6s ease-out 1.2s both;
-        }
-        
-        .success-message {
-            color: #64748b;
-            font-size: 17px;
-            line-height: 1.6;
-            margin-bottom: 32px;
-            animation: fadeInUp 0.6s ease-out 1.4s both;
-        }
-        
-        .confetti {
-            position: absolute;
-            width: 12px;
-            height: 12px;
-            background: #ffd700;
-            border-radius: 50%;
-            animation: confetti 3s ease-out infinite;
-            opacity: 0;
-        }
-        
-        .status-card {
-            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-            border-radius: 16px;
-            padding: 28px;
-            margin: 32px 0;
-            border: 1px solid #bae6fd;
-            animation: fadeInUp 0.6s ease-out 1.6s both;
-        }
-        
-        .status-header {
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 12px;
-            margin-bottom: 16px;
         }
         
-        .status-header svg {
-            width: 24px;
-            height: 24px;
-            color: #004080;
+        .success-message {
+            color: var(--text-secondary);
+            font-size: 17px;
+            line-height: 1.7;
+            margin-bottom: 32px;
+            max-width: 420px;
+            margin-left: auto;
+            margin-right: auto;
         }
         
-        .status-title {
-            color: #004080;
-            font-size: 18px;
+        /* Status Panel */
+        .status-panel {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            border-radius: 20px;
+            padding: 32px;
+            margin: 32px 0;
+            border: 1px solid #bae6fd;
+            text-align: left;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .status-panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 6px;
+            height: 100%;
+            background: linear-gradient(to bottom, var(--primary-blue), var(--secondary-blue));
+        }
+        
+        .panel-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        
+        .panel-icon {
+            width: 28px;
+            height: 28px;
+            color: var(--primary-blue);
+        }
+        
+        .panel-title {
+            color: var(--primary-blue);
+            font-size: 20px;
             font-weight: 600;
         }
         
         .status-list {
-            text-align: left;
-            max-width: 320px;
-            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
         }
         
         .status-item {
             display: flex;
             align-items: flex-start;
-            gap: 12px;
-            margin-bottom: 12px;
-            padding: 8px 0;
+            gap: 14px;
         }
         
-        .status-item:last-child {
-            margin-bottom: 0;
-        }
-        
-        .status-item svg {
-            width: 18px;
-            height: 18px;
-            color: #10b981;
+        .item-icon {
+            width: 22px;
+            height: 22px;
+            color: var(--success-green);
             flex-shrink: 0;
             margin-top: 2px;
         }
         
-        .status-item span {
-            color: #475569;
-            font-size: 15px;
+        .item-text {
+            color: var(--text-primary);
+            font-size: 16px;
             line-height: 1.5;
         }
         
-        .next-steps {
-            margin-top: 40px;
-            padding-top: 32px;
-            border-top: 1px solid #e2e8f0;
-            animation: fadeInUp 0.6s ease-out 1.8s both;
+        /* Redirect Timer */
+        .redirect-timer {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border-radius: 16px;
+            padding: 24px;
+            margin: 32px 0;
+            text-align: center;
+            border: 1px solid var(--border-color);
         }
         
-        .next-steps h3 {
-            color: #004080;
-            font-size: 18px;
-            font-weight: 600;
-            margin-bottom: 16px;
+        .timer-display {
+            font-size: 48px;
+            font-weight: 700;
+            color: var(--primary-blue);
+            margin-bottom: 12px;
+            font-feature-settings: "tnum";
+            font-variant-numeric: tabular-nums;
         }
         
-        .steps {
+        .timer-label {
+            color: var(--text-secondary);
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+        
+        .redirect-info {
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-top: 16px;
+        }
+        
+        /* Action Buttons */
+        .action-buttons {
             display: flex;
-            flex-direction: column;
-            gap: 20px;
-            align-items: center;
-        }
-        
-        .step {
-            display: flex;
-            align-items: center;
             gap: 16px;
-            padding: 16px 20px;
-            background: #f8fafc;
-            border-radius: 12px;
-            width: 100%;
-            max-width: 320px;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-        
-        .step:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 64, 128, 0.1);
-        }
-        
-        .step-number {
-            width: 36px;
-            height: 36px;
-            background: #004080;
-            color: white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
+            margin-top: 32px;
             justify-content: center;
+        }
+        
+        .btn {
+            padding: 16px 32px;
+            border-radius: 12px;
             font-weight: 600;
             font-size: 16px;
-            flex-shrink: 0;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: none;
+            font-family: 'Inter', sans-serif;
         }
         
-        .step-text {
-            color: #475569;
-            font-size: 15px;
-            text-align: left;
-            flex: 1;
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-blue) 0%, var(--secondary-blue) 100%);
+            color: white;
+            box-shadow: 0 8px 20px rgba(0, 100, 204, 0.2);
         }
         
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 24px rgba(0, 100, 204, 0.3);
+        }
+        
+        .btn-secondary {
+            background: white;
+            color: var(--primary-blue);
+            border: 2px solid var(--border-color);
+        }
+        
+        .btn-secondary:hover {
+            background: #f8fafc;
+            border-color: var(--secondary-blue);
+        }
+        
+        /* Footer */
         .footer {
             background: #1e293b;
             padding: 32px;
             text-align: center;
+            position: relative;
+        }
+        
+        .footer::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 1px;
+            background: linear-gradient(to right, transparent, var(--accent-blue), transparent);
         }
         
         .footer-logo {
             color: white;
-            font-size: 18px;
-            font-weight: 600;
+            font-size: 20px;
+            font-weight: 700;
             margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
         }
         
         .footer-tagline {
             color: #cbd5e1;
-            font-size: 14px;
-            margin-bottom: 20px;
+            font-size: 15px;
+            margin-bottom: 24px;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
         }
         
         .footer-note {
             color: #94a3b8;
-            font-size: 12px;
-            line-height: 1.5;
-            margin-top: 20px;
-            padding-top: 20px;
+            font-size: 13px;
+            line-height: 1.6;
+            margin-top: 24px;
+            padding-top: 24px;
             border-top: 1px solid #334155;
         }
         
+        /* Animations */
         @keyframes fadeIn {
             from {
                 opacity: 0;
-                transform: translateY(20px);
+                transform: translateY(30px);
             }
             to {
                 opacity: 1;
                 transform: translateY(0);
-            }
-        }
-        
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        @keyframes scaleIn {
-            0% {
-                transform: scale(0);
-                opacity: 0;
-            }
-            70% {
-                transform: scale(1.1);
-            }
-            100% {
-                transform: scale(1);
-                opacity: 1;
-            }
-        }
-        
-        @keyframes checkmark {
-            0% {
-                transform: scale(0);
-            }
-            50% {
-                transform: scale(1.2);
-            }
-            100% {
-                transform: scale(1);
             }
         }
         
@@ -338,35 +406,77 @@
             0% {
                 transform: translate(0, 0) rotate(0deg);
             }
+            33% {
+                transform: translate(30px, -30px) rotate(120deg);
+            }
+            66% {
+                transform: translate(-20px, 20px) rotate(240deg);
+            }
             100% {
-                transform: translate(-10px, -10px) rotate(360deg);
+                transform: translate(0, 0) rotate(360deg);
             }
         }
         
-        @keyframes confetti {
+        @keyframes pulseCircle {
+            0%, 100% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.2);
+            }
+            50% {
+                transform: scale(1.05);
+                box-shadow: 0 0 0 20px rgba(255, 255, 255, 0);
+            }
+        }
+        
+        @keyframes checkmarkDraw {
             0% {
-                transform: translateY(0) rotate(0deg);
+                stroke-dashoffset: 100;
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            50% {
                 opacity: 1;
+                transform: scale(1.1);
             }
             100% {
-                transform: translateY(100vh) rotate(720deg);
-                opacity: 0;
+                stroke-dashoffset: 0;
+                opacity: 1;
+                transform: scale(1);
             }
         }
         
-        /* Generate confetti */
-        .confetti-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 1000;
+        @keyframes countdownPulse {
+            0%, 100% {
+                transform: scale(1);
+                color: var(--primary-blue);
+            }
+            50% {
+                transform: scale(1.05);
+                color: var(--accent-blue);
+            }
         }
         
+        /* Progress Bar */
+        .progress-container {
+            width: 100%;
+            height: 6px;
+            background: var(--border-color);
+            border-radius: 3px;
+            margin-top: 20px;
+            overflow: hidden;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(to right, var(--primary-blue), var(--secondary-blue));
+            width: 0%;
+            border-radius: 3px;
+            transition: width 1s linear;
+        }
+        
+        /* Responsive */
         @media (max-width: 640px) {
-            .success-container {
+            .container {
                 max-width: 100%;
             }
             
@@ -386,18 +496,20 @@
                 font-size: 24px;
             }
             
-            .status-card {
+            .status-panel {
                 padding: 24px;
             }
             
-            .step {
+            .action-buttons {
                 flex-direction: column;
-                text-align: center;
-                gap: 12px;
             }
             
-            .step-text {
-                text-align: center;
+            .btn {
+                width: 100%;
+            }
+            
+            .timer-display {
+                font-size: 42px;
             }
         }
         
@@ -410,14 +522,24 @@
                 padding: 32px 20px;
             }
             
-            .checkmark-circle {
-                width: 80px;
-                height: 80px;
+            .checkmark-container {
+                width: 100px;
+                height: 100px;
             }
             
-            .checkmark {
-                width: 40px;
-                height: 40px;
+            .outer-circle {
+                width: 100px;
+                height: 100px;
+            }
+            
+            .inner-circle {
+                width: 75px;
+                height: 75px;
+            }
+            
+            .checkmark-icon {
+                width: 32px;
+                height: 32px;
             }
             
             .header h1 {
@@ -427,158 +549,255 @@
             .content {
                 padding: 32px 20px;
             }
+            
+            .timer-display {
+                font-size: 36px;
+            }
         }
     </style>
 </head>
 <body>
-    <!-- Confetti Animation -->
-    <div class="confetti-container" id="confettiContainer"></div>
+    <!-- Background Elements -->
+    <div class="bg-elements">
+        <div class="bg-circle circle-1"></div>
+        <div class="bg-circle circle-2"></div>
+        <div class="bg-circle circle-3"></div>
+    </div>
     
-    <!-- Success Container -->
-    <div class="success-container">
-        <!-- Header Section -->
-        <div class="header">
-            <div class="checkmark-circle">
-                <div class="checkmark">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
-                    </svg>
-                </div>
-            </div>
-            <h1>Email Verified Successfully!</h1>
-            <p>Kisii University E‑Commerce</p>
-        </div>
-        
-        <!-- Content Section -->
-        <div class="content">
-            <h2 class="success-title">Welcome to the Community! 🎉</h2>
-            <p class="success-message">
-                Your email address has been successfully verified. Your account is now active and ready to use.
-            </p>
-            
-            <!-- Status Card -->
-            <div class="status-card">
-                <div class="status-header">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <div class="status-title">Account Status: Active</div>
-                </div>
-                <div class="status-list">
-                    <div class="status-item">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                        </svg>
-                        <span>Email verification completed</span>
-                    </div>
-                    <div class="status-item">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                        </svg>
-                        <span>Account security confirmed</span>
-                    </div>
-                    <div class="status-item">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                        </svg>
-                        <span>Full marketplace access granted</span>
+    <!-- Main Container -->
+    <div class="container">
+        <div class="success-card">
+            <!-- Header Section -->
+            <div class="header">
+                <div class="checkmark-container">
+                    <div class="outer-circle">
+                        <div class="inner-circle">
+                            <svg class="checkmark-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                            </svg>
+                        </div>
                     </div>
                 </div>
+                <h1>Email Verified Successfully!</h1>
+                <p>Kisii University E‑Commerce Platform</p>
             </div>
             
-            <!-- Next Steps -->
-            <div class="next-steps">
-                <h3>You're All Set! Here's What's Next:</h3>
-                <div class="steps">
-                    <div class="step">
-                        <div class="step-number">1</div>
-                        <div class="step-text">Return to the login page on your device</div>
+            <!-- Content Section -->
+            <div class="content">
+                <h2 class="success-title">
+                    <i class="fas fa-check-circle"></i>
+                    Welcome to the Community! 🎉
+                </h2>
+                <p class="success-message">
+                    Your email address has been successfully verified. Your account is now fully activated and ready to explore our campus marketplace.
+                </p>
+                
+                <!-- Status Panel -->
+                <div class="status-panel">
+                    <div class="panel-header">
+                        <svg class="panel-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <div class="panel-title">Account Status: Fully Active</div>
                     </div>
-                    <div class="step">
-                        <div class="step-number">2</div>
-                        <div class="step-text">Enter your credentials to access your account</div>
-                    </div>
-                    <div class="step">
-                        <div class="step-number">3</div>
-                        <div class="step-text">Start exploring products from university vendors</div>
+                    <div class="status-list">
+                        <div class="status-item">
+                            <svg class="item-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                            <div class="item-text">Email verification completed successfully</div>
+                        </div>
+                        <div class="status-item">
+                            <svg class="item-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                            <div class="item-text">Account security confirmed and enabled</div>
+                        </div>
+                        <div class="status-item">
+                            <svg class="item-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                            <div class="item-text">Full marketplace access granted</div>
+                        </div>
                     </div>
                 </div>
+                
+                <!-- Redirect Timer -->
+                <div class="redirect-timer">
+                    <div class="timer-display" id="countdown">10</div>
+                    <div class="timer-label">Redirecting to Marketplace in <span id="seconds-text">seconds</span></div>
+                    
+                    <div class="progress-container">
+                        <div class="progress-bar" id="progressBar"></div>
+                    </div>
+                    
+                    <p class="redirect-info">
+                        You will be automatically redirected to the Kisii University E‑Commerce Platform.
+                        <br>If not redirected, click the button below.
+                    </p>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="action-buttons">
+                    <a href="https://kisiiuniversityecommerceplatform.vercel.app/" class="btn btn-primary" id="redirectBtn">
+                        <i class="fas fa-store"></i>
+                        Go to Marketplace Now
+                    </a>
+                    <button class="btn btn-secondary" id="stayBtn">
+                        <i class="fas fa-clock"></i>
+                        Stay Here Longer
+                    </button>
+                </div>
             </div>
-        </div>
-        
-        <!-- Footer -->
-        <div class="footer">
-            <div class="footer-logo">Kisii University E‑Commerce</div>
-            <div class="footer-tagline">Connecting students with trusted campus vendors</div>
-            <div class="footer-note">
-                © ${new Date().getFullYear()} Kisii University. All rights reserved.<br>
-                P.O Box 408-40200, Kisii, Kenya<br>
-                <small>This is a secure confirmation of your email verification.</small>
+            
+            <!-- Footer -->
+            <div class="footer">
+                <div class="footer-logo">
+                    <i class="fas fa-university"></i>
+                    Kisii University E‑Commerce
+                </div>
+                <div class="footer-tagline">
+                    Connecting students with trusted campus vendors and services
+                </div>
+                <div class="footer-note">
+                    © <span id="currentYear"></span> Kisii University. All rights reserved.<br>
+                    P.O Box 408-40200, Kisii, Kenya<br>
+                    <small>This is a secure confirmation of your email verification.</small>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
-        // Generate confetti animation
-        function createConfetti() {
-            const container = document.getElementById('confettiContainer');
-            const colors = ['#ffd700', '#004080', '#0066cc', '#10b981', '#8b5cf6'];
+        // Set current year
+        document.getElementById('currentYear').textContent = new Date().getFullYear();
+        
+        // Countdown and redirect functionality
+        let countdown = 10;
+        let redirectEnabled = true;
+        const countdownElement = document.getElementById('countdown');
+        const secondsTextElement = document.getElementById('seconds-text');
+        const progressBar = document.getElementById('progressBar');
+        const redirectBtn = document.getElementById('redirectBtn');
+        const stayBtn = document.getElementById('stayBtn');
+        
+        // Update countdown display
+        function updateCountdown() {
+            if (!redirectEnabled) return;
             
-            for (let i = 0; i < 150; i++) {
-                const confetti = document.createElement('div');
-                confetti.className = 'confetti';
-                
-                // Random properties
-                const color = colors[Math.floor(Math.random() * colors.length)];
-                const size = Math.random() * 10 + 5;
-                const left = Math.random() * 100;
-                const delay = Math.random() * 3;
-                const duration = Math.random() * 2 + 2;
-                
-                confetti.style.width = `${size}px`;
-                confetti.style.height = `${size}px`;
-                confetti.style.background = color;
-                confetti.style.left = `${left}%`;
-                confetti.style.animationDelay = `${delay}s`;
-                confetti.style.animationDuration = `${duration}s`;
-                
-                container.appendChild(confetti);
-                
-                // Remove confetti after animation
-                setTimeout(() => {
-                    confetti.remove();
-                }, (delay + duration) * 1000);
+            countdownElement.textContent = countdown;
+            secondsTextElement.textContent = countdown === 1 ? 'second' : 'seconds';
+            
+            // Update progress bar
+            const progressPercentage = 100 - (countdown * 10);
+            progressBar.style.width = `${progressPercentage}%`;
+            
+            // Add pulse animation on last 3 seconds
+            if (countdown <= 3) {
+                countdownElement.style.animation = 'countdownPulse 0.5s infinite';
             }
+            
+            if (countdown <= 0) {
+                // Redirect to marketplace
+                window.location.href = 'https://kisiiuniversityecommerceplatform.vercel.app/';
+                return;
+            }
+            
+            countdown--;
+            setTimeout(updateCountdown, 1000);
         }
         
-        // Start animations when page loads
-        window.addEventListener('load', () => {
-            // Create confetti with delay
-            setTimeout(createConfetti, 500);
+        // Start countdown
+        setTimeout(updateCountdown, 1500);
+        
+        // Manual redirect button
+        redirectBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            redirectEnabled = false;
+            countdownElement.textContent = '0';
+            countdownElement.style.animation = 'none';
+            progressBar.style.width = '100%';
+            progressBar.style.background = 'linear-gradient(to right, var(--primary-blue), var(--success-green))';
             
-            // Add success sound simulation (visual only)
-            const successSoundSimulation = () => {
-                // Visual feedback for sound
-                const checkmark = document.querySelector('.checkmark');
-                checkmark.style.boxShadow = '0 0 0 10px rgba(0, 100, 204, 0.1)';
-                setTimeout(() => {
-                    checkmark.style.boxShadow = 'none';
-                }, 300);
-            };
-            
-            setTimeout(successSoundSimulation, 1000);
+            // Add click animation
+            this.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                this.style.transform = '';
+                window.location.href = this.href;
+            }, 200);
         });
         
-        // Add pulsing animation to success title
-        setTimeout(() => {
-            const title = document.querySelector('.success-title');
-            setInterval(() => {
-                title.style.transform = 'scale(1.02)';
+        // Stay button functionality
+        stayBtn.addEventListener('click', function() {
+            if (redirectEnabled) {
+                redirectEnabled = false;
+                this.innerHTML = '<i class="fas fa-check"></i> Auto-Redirect Disabled';
+                this.classList.remove('btn-secondary');
+                this.classList.add('btn-primary');
+                this.style.background = 'linear-gradient(135deg, var(--success-green), #34d399)';
+                
+                countdownElement.textContent = '—';
+                countdownElement.style.animation = 'none';
+                secondsTextElement.textContent = 'auto-redirect disabled';
+                progressBar.style.background = '#94a3b8';
+                
+                // Show confirmation message
+                const redirectInfo = document.querySelector('.redirect-info');
+                redirectInfo.innerHTML = '<i class="fas fa-info-circle"></i> Auto-redirect disabled. Click "Go to Marketplace Now" when ready.';
+                redirectInfo.style.color = 'var(--success-green)';
+            }
+        });
+        
+        // Add celebration effects
+        window.addEventListener('load', function() {
+            // Confetti effect simulation with emojis
+            setTimeout(() => {
+                const confettiEmojis = ['🎉', '✨', '🎊', '🌟', '✅', '🚀'];
+                const header = document.querySelector('.header');
+                
+                for (let i = 0; i < 20; i++) {
+                    const emoji = document.createElement('div');
+                    emoji.textContent = confettiEmojis[Math.floor(Math.random() * confettiEmojis.length)];
+                    emoji.style.position = 'absolute';
+                    emoji.style.fontSize = '24px';
+                    emoji.style.top = `${Math.random() * 100}%`;
+                    emoji.style.left = `${Math.random() * 100}%`;
+                    emoji.style.opacity = '0';
+                    emoji.style.animation = `fadeIn 0.5s ${i * 0.1}s forwards, float ${3 + Math.random() * 2}s ${i * 0.1}s forwards`;
+                    emoji.style.zIndex = '1';
+                    emoji.style.pointerEvents = 'none';
+                    
+                    header.appendChild(emoji);
+                    
+                    // Remove emoji after animation
+                    setTimeout(() => {
+                        if (emoji.parentNode) {
+                            emoji.parentNode.removeChild(emoji);
+                        }
+                    }, 5000);
+                }
+            }, 500);
+            
+            // Success sound simulation
+            setTimeout(() => {
+                // Visual feedback for sound
+                const innerCircle = document.querySelector('.inner-circle');
+                innerCircle.style.boxShadow = '0 0 0 15px rgba(0, 100, 204, 0.1), 0 8px 20px rgba(0, 0, 0, 0.1)';
                 setTimeout(() => {
-                    title.style.transform = 'scale(1)';
-                }, 500);
-            }, 2000);
-        }, 2000);
+                    innerCircle.style.boxShadow = '0 8px 20px rgba(0, 0, 0, 0.1)';
+                }, 300);
+            }, 800);
+        });
+        
+        // Add keyboard shortcut for redirect
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                redirectBtn.click();
+            }
+            if (e.key === 'Escape') {
+                stayBtn.click();
+            }
+        });
     </script>
 </body>
 </html>
