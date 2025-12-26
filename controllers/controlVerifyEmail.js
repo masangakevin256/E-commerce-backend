@@ -1,6 +1,7 @@
 import { db } from "../config/connect_database.js";
 import path from "path";
 import { fileURLToPath } from "url";
+import { BASE_URL } from "../config/BASE_URL.js";
 
 // Fix for __dirname in ESM
 const __filename = fileURLToPath(import.meta.url);

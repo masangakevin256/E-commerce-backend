@@ -64,7 +64,7 @@ const verify = verifyResult.rows[0];
 
   // Send email
   const encodedEmail = encodeURIComponent(email);
-  const resetUrl = `http://localhost:3500/resetPassword/customers?email=${encodedEmail}&token=${resetToken}`;
+  const resetUrl = `https://e-commerce-backend-0qbw.onrender.com/resetPassword/customers?email=${encodedEmail}&token=${resetToken}`;
   
  
   
@@ -327,8 +327,7 @@ export const serveResetPasswordForm = async (req, res) => {
     
     
     
-    // Serve the form...
-    // ... your form HTML code ...
+    
       res.send(`
       <!DOCTYPE html>
       <html lang="en">

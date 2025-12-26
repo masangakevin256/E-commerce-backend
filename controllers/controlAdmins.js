@@ -57,11 +57,11 @@ export const addNewAdmin = async (req, res) => {
         return res.status(400).json({ message: "Failed to verify the registration code" });
         }
 
-        // only two admins in the system
+        // only one admins in the system
         const adminCountResult = await db.query("SELECT COUNT(*) AS count FROM admins");
         const adminCount = parseInt(adminCountResult.rows[0].count, 10);
 
-        if (adminCount >= 2) {
+        if (adminCount >= 1) {
         return res.status(400).json({ message: "Maximum number of admins reached" });
         }
 
@@ -76,7 +76,7 @@ export const addNewAdmin = async (req, res) => {
         if (lastAdminResult.rows.length === 0) {
         admin_id = "AD001";
         } else {
-        const lastId = lastAdminResult.rows[0].admin_id; // e.g. "AD007"
+        const lastId = lastAdminResult.rows[0].admin_id; 
         const num = parseInt(lastId.replace("AD", ""), 10) + 1;
         admin_id = `AD${String(num).padStart(3, "0")}`;
         }
@@ -174,7 +174,7 @@ export const addNewAdmin = async (req, res) => {
                     </p>
                     
                     <!-- Verification Button -->
-                    <a href="http://localhost:3500/verifyEmail/admins?email=${encodeURIComponent(email)}&token=${verifyToken}"
+                    <a href="https://e-commerce-backend-0qbw.onrender.com/verifyEmail/admins?email=${encodeURIComponent(email)}&token=${verifyToken}"
                     style="display:inline-block; background:linear-gradient(135deg, #004080 0%, #0066cc 100%); color:white; padding:14px 32px; border-radius:10px; text-decoration:none; font-weight:600; font-size:15px; box-shadow:0 4px 12px rgba(0,100,204,0.2); cursor:pointer;">
                     Complete Account Setup
                     </a>

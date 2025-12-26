@@ -162,7 +162,7 @@ export const addNewCustomer = async (req, res) => {
                         </p>
                         
                         <!-- Verification Button -->
-                        <a href="http://localhost:3500/verifyEmail/customers?email=${encodeURIComponent(email)}&token=${verifyToken}"
+                        <a href="https://e-commerce-backend-0qbw.onrender.com/verifyEmail/customers?email=${encodeURIComponent(email)}&token=${verifyToken}"
                         style="display:inline-block; background:linear-gradient(135deg, #004080 0%, #0066cc 100%); color:white; padding:14px 32px; border-radius:10px; text-decoration:none; font-weight:600; font-size:15px; transition:all 0.3s ease; box-shadow:0 4px 12px rgba(0,100,204,0.2);">
                         Verify Email Address
                         </a>
@@ -176,7 +176,7 @@ export const addNewCustomer = async (req, res) => {
                             ${verifyToken}
                         </div>
                         <p style="margin:8px 0 0; color:#94a3b8; font-size:11px;">
-                            Or visit: http://localhost:3500/verifyEmail/customers
+                            Or visit: https://e-commerce-backend-0qbw.onrender.com/verifyEmail/customers
                         </p>
                         </div>
                     </div>
@@ -264,7 +264,7 @@ export const addNewCustomer = async (req, res) => {
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="#fbbf24">
                             <path d="M13 16h-1v-4h1m0-4h-1v2h1m5-6H9a2 2 0 00-2 2v16a2 2 0 002 2h10a2 2 0 002-2V4a2 2 0 00-2-2z"/>
                         </svg>
-                        This is a localhost development link (http://localhost:3500)
+                        YOUR DEVELOPER: masangakevin60@gmail.com
                         </p>
                     </div>
                     
