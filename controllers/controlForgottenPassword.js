@@ -599,6 +599,7 @@ export const serveResetPasswordForm = async (req, res) => {
               });
               
               const result = await response.json();
+              console.log(result)
               
               if (response.ok) {
                 showSuccess('Password reset successfully! You can now log in with your new password.');
