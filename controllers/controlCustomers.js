@@ -44,6 +44,14 @@ export const addNewCustomer = async (req, res) => {
         await db.query(`ALTER TABLE customers ADD COLUMN referred_by VARCHAR(20) DEFAULT NULL`);
       }
     }
+    //check if a customer with that email exit
+    const emailExists = await db.query(
+      "SELECT * FROM customers WHERE email = $1",
+      [email]
+    );
+    if (emailExists.rows.length > 0) {
+      return res.status(400).json({ message: "Email already exists" });
+    }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 

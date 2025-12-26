@@ -86,7 +86,7 @@ export const customerLogin = async (req, res) => {
     const result = await db.query("SELECT * FROM customers WHERE email = $1", [email]);
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ message: "Customer not found!" });
+      return res.status(404).json({ message: "User not found!" });
     }
 
     const customer = result.rows[0];
