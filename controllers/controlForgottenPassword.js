@@ -590,7 +590,7 @@ export const serveResetPasswordForm = async (req, res) => {
             submitBtn.disabled = true;
             
             try {
-              const response = await fetch('/resetPassword/customers', {
+              const response = await fetch('https://e-commerce-backend-0qbw.onrender.com/resetPassword/customers', {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
