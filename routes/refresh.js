@@ -1,7 +1,10 @@
 import express from "express";
-import { adminRefreshToken, customerRefreshToken } from "../controllers/controlRefreshToken.js";
+import { handleRefreshToken } from "../controllers/controlRefreshToken.js"; // EDITED: Import unified handler
 
 export const refreshRouter = express.Router();
 
-refreshRouter.post("/admins", adminRefreshToken);
-refreshRouter.post("/customers", customerRefreshToken);
+// EDITED: Unified route for all users
+refreshRouter.get("/", handleRefreshToken);
+// Kept for backward compatibility if needed, but pointing to same handler
+refreshRouter.get("/admins", handleRefreshToken);
+refreshRouter.get("/customers", handleRefreshToken);

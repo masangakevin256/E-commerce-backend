@@ -9,6 +9,7 @@ import { emailRouter } from "./routes/verifyEmail.js";
 import { resetPasswordRouter } from "./routes/resetPassword.js";
 import path from "path";
 import cors from "cors";
+import cookieParser from "cookie-parser"; // EDITED: Imported cookie-parser
 import { fileURLToPath } from "url";
 import { verifyJwt } from "./middleware/verifyJwt.js";
 import { errorRouter } from "./routes/error.js";
@@ -35,6 +36,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 //custom middleware
 app.use(express.json())
+app.use(cookieParser()); // EDITED: Added cookie-parser middleware
 app.use(express.urlencoded({ extended: true }))
 app.use(express.static(path.join(__dirname, "/public")));
 
