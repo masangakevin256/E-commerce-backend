@@ -23,7 +23,7 @@ export const sendEmail = async ({ to, subject, html }) => {
     console.error("Email error:", error.response?.body || error.message);
   }
 };
-console.log(process.env.EMAIL_FROM)
+// console.log(process.env.EMAIL_FROM)
 
 
 
