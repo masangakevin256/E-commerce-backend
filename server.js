@@ -29,6 +29,7 @@ import { notificationRouter } from "./routes/notifications.js";
 import reviewRouter from "./routes/reviews.js";
 import addressRouter from "./routes/addresses.js";
 import { messageRouter } from "./routes/messages.js";
+import { aiRouter } from "./routes/aiRouter.js";
 
 const app = express();
 // Fix for __dirname in ESM
@@ -79,6 +80,7 @@ app.use("/messages", messageRouter);
 app.use("/checkout", checkoutRouter);
 app.use("/reviews", reviewRouter);
 app.use("/addresses", addressRouter);
+app.use("/api/ai", aiRouter);
 
 
 // sending error file
