@@ -26,6 +26,7 @@ export const adminsLogin = async (req, res) => {
     if (admin.verify_email === "pending") {
       return res.status(400).json({ message: "Please verify your email" });
     }
+    console.log(process.env)
 
     const accessToken = jwt.sign(
       {
